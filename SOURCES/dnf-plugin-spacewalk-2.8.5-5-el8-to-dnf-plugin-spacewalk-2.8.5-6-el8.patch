@@ -1,0 +1,179 @@
+diff --git a/dnf-plugin-spacewalk-revert-to-1.0.patch b/dnf-plugin-spacewalk-revert-to-1.0.patch
+deleted file mode 100644
+index 0a2d6ec..0000000
+--- a/dnf-plugin-spacewalk-revert-to-1.0.patch
++++ /dev/null
+@@ -1,90 +0,0 @@
+-diff --git a/client/rhel/dnf-plugin-spacewalk/spacewalk.py b/client/rhel/dnf-plugin-spacewalk/spacewalk.py
+-index 72ac31e..269f94f 100644
+---- a/client/rhel/dnf-plugin-spacewalk/spacewalk.py
+-+++ b/client/rhel/dnf-plugin-spacewalk/spacewalk.py
+-@@ -28,7 +28,6 @@ import librepo
+- import os
+- import sys
+- from copy import copy
+--from dnf.conf.config import PRIO_PLUGINCONFIG
+-
+- # up2date libs are in non-standard path
+- sys.path.append("/usr/share/rhn/")
+-@@ -40,6 +39,7 @@ from rhn.i18n import ustr
+- from up2date_client import up2dateErrors
+- 
+- STORED_CHANNELS_NAME = '_spacewalk.json'
+-+PLUGIN_CONF = 'spacewalk'
+- 
+- RHN_DISABLED    = _("Spacewalk based repositories will be disabled.")
+- CHANNELS_DISABLED = _("Spacewalk channel support will be disabled.")
+-@@ -66,11 +66,11 @@ class Spacewalk(dnf.Plugin):
+-         self.connected_to_spacewalk = False
+-         self.up2date_cfg = {}
+-         self.conf = copy(self.base.conf)
+--        self.parser = self.read_config(self.conf)
+-+        self.parser = self.read_config(self.conf, PLUGIN_CONF)
+-         if "main" in self.parser.sections():
+-             options = self.parser.items("main")
+-             for (key, value) in options:
+--                self.conf._set_value(key, value, PRIO_PLUGINCONFIG)
+-+                setattr(self.conf, key, value)
+-         if not self.conf.enabled:
+-             return
+-         logger.debug('initialized Spacewalk plugin')
+-@@ -142,9 +142,9 @@ class Spacewalk(dnf.Plugin):
+-             if channel_id in self.parser.sections():
+-                 options = self.parser.items(channel_id)
+-                 for (key, value) in options:
+--                    conf._set_value(key, value, PRIO_PLUGINCONFIG)
+-+                    setattr(conf, key, value)
+-             repo = SpacewalkRepo(channel_dict, {
+--                                    'conf'      : self.base.conf,
+-+                                    'cachedir'  : self.base.conf.cachedir,
+-                                     'proxy'     : proxy_url,
+-                                     'timeout'   : conf.timeout,
+-                                     'sslcacert' : sslcacert,
+-@@ -212,7 +212,7 @@ class  SpacewalkRepo(dnf.repo.Repo):
+- 
+-     def __init__(self, channel, opts):
+-         super(SpacewalkRepo, self).__init__(ustr(channel['label']),
+--                                            opts.get('conf'))
+-+                                            opts.get('cachedir'))
+-         # dnf stuff
+-         self.name = ustr(channel['name'])
+-         self.baseurl = [ url + '/GET-REQ/' + self.id for url in channel['url']]
+-diff --git a/client/rhel/dnf-plugin-spacewalk/actions/packages.py b/client/rhel/dnf-plugin-spacewalk/actions/packages.py
+-index 86ab72b..5516d1c 100644
+---- a/client/rhel/dnf-plugin-spacewalk/actions/packages.py
+-+++ b/client/rhel/dnf-plugin-spacewalk/actions/packages.py
+-@@ -125,7 +125,7 @@ def update(package_list, cache_only=None):
+-         else:
+-             ret = (0, "Requested packages already installed", {})
+-         # workaround for RhBug:1218071
+--        base._plugins._unload()
+-+        base._plugins.unload()
+-         base.close()
+-         return ret
+- 
+-@@ -271,8 +271,10 @@ def _dnf_base(load_system_repo=True, load_available_repos=True):
+-     # initialize dnf
+-     base = dnf.Base()
+- 
+--    if not base._plugins.plugins:
+--        base.init_plugins()
+-+    # this is actually workaround for RhBug:1218071
+-+    if not base._plugins.plugins and base.conf.plugins:
+-+        base._plugins.load(base.conf.pluginpath, [])
+-+        base._plugins.run_init(base)
+-     if load_available_repos:
+-         base.read_all_repos()
+-     base.fill_sack(load_system_repo=True, load_available_repos=True)
+-@@ -335,7 +335,7 @@ def _dnf_transaction(base, install=[], remove=[], full_update=False,
+-         return (status, message, data)
+-     finally:
+-         # workaround for RhBug:1218071
+--        base._plugins._unload()
+-+        base._plugins.unload()
+-         base.close()
+- 
+-     return (0, "Update Succeeded", {})
+diff --git a/dnf-plugin-spacewalk.spec b/dnf-plugin-spacewalk.spec
+index 41ff4e5..17df012 100644
+--- a/dnf-plugin-spacewalk.spec
++++ b/dnf-plugin-spacewalk.spec
+@@ -12,18 +12,14 @@
+ Summary: DNF plugin for Spacewalk
+ Name: dnf-plugin-spacewalk
+ Version: 2.8.5
+-Release: 5%{?dist}
++Release: 6%{?dist}
+ License: GPLv2
+ Source0: https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
+ URL:     https://github.com/spacewalkproject/spacewalk
+ BuildArch: noarch
+ 
+ Requires: %{pythonX}-%{name} = %{version}-%{release}
+-%if 0%{?fedora} && 0%{?fedora} <= 25
+-Requires: dnf >= 0.5.3
+-%else
+ Requires: dnf >= 2.0.0
+-%endif
+ Requires: dnf-plugins-core
+ Requires: librepo >= 1.7.15
+ %if 0%{?fedora}
+@@ -63,9 +59,6 @@ Python 3 specific files for %{name}.
+ %setup -q
+ 
+ %build
+-%if 0%{?fedora} && 0%{?fedora} <= 25
+-patch -p4 < dnf-plugin-spacewalk-revert-to-1.0.patch
+-%endif
+ 
+ %install
+ install -d %{buildroot}%{_sysconfdir}/dnf/plugins/
+@@ -117,6 +110,10 @@ install -m 644 actions/errata.py %{buildroot}%{python3_sitelib}/rhn/actions/
+ %endif
+ 
+ %changelog
++* Tue Oct 16 2018 Tomas Kasparek <tkasparek@redhat.com> 2.8.5-6
++- spec cleanup (no more builds on Fedora <= 25) (michael.mraka@redhat.com)
++- Resolves: #1637980 - fixed plugin for dnf > 3.6.0 (michael.mraka@redhat.com)
++
+ * Tue Jul 24 2018 Tomas Kasparek <tkasparek@redhat.com> 2.8.5-5
+ - Related: #1581665 - provide useful symlinks to a manpage
+   (tkasparek@redhat.com)
+diff --git a/spacewalk.py b/spacewalk.py
+index add5d34..e0b418b 100644
+--- a/spacewalk.py
++++ b/spacewalk.py
+@@ -242,7 +242,13 @@ class  SpacewalkRepo(dnf.repo.Repo):
+         else:
+             self.disable()
+ 
+-    def add_http_headers(self, handle):
++        if hasattr(self, '_repo'):
++            # dnf > 3.6.0
++            http_headers = self.create_http_headers()
++            if http_headers:
++                self._repo.setHttpHeaders(http_headers)
++
++    def create_http_headers(self):
+         http_headers = []
+         for header in self.needed_headers:
+             if not header in self.login_info:
+@@ -257,12 +263,15 @@ class  SpacewalkRepo(dnf.repo.Repo):
+                 http_headers.append("%s: %s" % (header, self.login_info[header]))
+         if not self.force_http:
+             http_headers.append("X-RHN-Transport-Capability: follow-redirects=3")
+-        if http_headers:
+-            handle.setopt(librepo.LRO_HTTPHEADER, http_headers)
++
++        return http_headers
+ 
+     def _handle_new_remote(self, destdir, mirror_setup=True):
++        # this function is called only on dnf < 3.6.0 (up to Fedora 29)
+         handle = super(SpacewalkRepo, self)._handle_new_remote(destdir, mirror_setup)
+-        self.add_http_headers(handle)
++        http_headers = self.create_http_headers()
++        if http_headers:
++            handle.setopt(librepo.LRO_HTTPHEADER, http_headers)
+         return handle
+ 
+ 

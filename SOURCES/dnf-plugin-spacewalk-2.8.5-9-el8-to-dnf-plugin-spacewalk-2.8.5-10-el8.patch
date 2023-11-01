@@ -1,0 +1,52 @@
+diff --git a/dnf-plugin-spacewalk.spec b/dnf-plugin-spacewalk.spec
+index fd42348..d2c31fa 100644
+--- a/dnf-plugin-spacewalk.spec
++++ b/dnf-plugin-spacewalk.spec
+@@ -12,7 +12,7 @@
+ Summary: DNF plugin for Spacewalk
+ Name: dnf-plugin-spacewalk
+ Version: 2.8.5
+-Release: 9%{?dist}
++Release: 10%{?dist}
+ License: GPLv2
+ Source0: https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
+ URL:     https://github.com/spacewalkproject/spacewalk
+@@ -113,6 +113,9 @@ install -m 644 actions/errata.py %{buildroot}%{python3_sitelib}/rhn/actions/
+ %endif
+ 
+ %changelog
++* Wed Apr 03 2019 Michael Mraka <michael.mraka@redhat.com> 2.8.5-10
++- Resolves: #1673445 - changed wording to refer to Red Hat Satellite
++
+ * Wed Dec 19 2018 Michael Mraka <michael.mraka@redhat.com> 2.8.5-9
+ - Resolves: #1660552 - report and fail gracefully if not root
+ - logger.warn() has been obsoleted
+diff --git a/spacewalk.py b/spacewalk.py
+index 1e60eef..89e7822 100644
+--- a/spacewalk.py
++++ b/spacewalk.py
+@@ -38,17 +38,17 @@ from up2date_client import up2dateErrors
+ 
+ STORED_CHANNELS_NAME = '_spacewalk.json'
+ 
+-RHN_DISABLED    = _("Spacewalk based repositories will be disabled.")
+-CHANNELS_DISABLED = _("Spacewalk channel support will be disabled.")
+-COMMUNICATION_ERROR  = _("There was an error communicating with Spacewalk server.")
+-NOT_REGISTERED_ERROR = _("This system is not registered with Spacewalk server.")
++RHN_DISABLED    = _("Red Hat Satellite or Spacewalk based repositories will be disabled.")
++CHANNELS_DISABLED = _("Red Hat Satellite or Spacewalk channel support will be disabled.")
++COMMUNICATION_ERROR  = _("There was an error communicating with Red Hat Satellite or Spacewalk server.")
++NOT_REGISTERED_ERROR = _("This system is not registered with Red Hat Satellite or Spacewalk server.")
+ NOT_SUBSCRIBED_ERROR = _("This system is not subscribed to any channels.")
+ NO_SYSTEM_ID_ERROR   = _("SystemId could not be acquired.")
+ USE_RHNREGISTER      = _("You can use rhn_register to register.")
+-UPDATES_FROM_SPACEWALK = _("This system is receiving updates from Spacewalk server.")
+-GPG_KEY_REJECTED     = _("For security reasons packages from Spacewalk based repositories can be verified only with locally installed gpg keys. GPG key '%s' has been rejected.")
++UPDATES_FROM_SPACEWALK = _("This system is receiving updates from Red Hat Satellite or Spacewalk server.")
++GPG_KEY_REJECTED     = _("For security reasons packages from Red Hat Satellite or Spacewalk based repositories can be verified only with locally installed gpg keys. GPG key '%s' has been rejected.")
+ PROFILE_NOT_SENT     = _("Package profile information could not be sent.")
+-MISSING_HEADER       = _("Missing required login information for Spacewalk: %s")
++MISSING_HEADER       = _("Missing required login information for Red Hat Satellite or Spacewalk: %s")
+ MUST_BE_ROOT         = _('Spacewalk plugin has to be run under with the root privileges.')
+ 
+ class Spacewalk(dnf.Plugin):

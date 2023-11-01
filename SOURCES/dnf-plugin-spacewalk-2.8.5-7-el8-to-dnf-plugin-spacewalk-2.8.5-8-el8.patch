@@ -1,0 +1,54 @@
+diff --git a/dnf-plugin-spacewalk.spec b/dnf-plugin-spacewalk.spec
+index e20e59f..24a5b5d 100644
+--- a/dnf-plugin-spacewalk.spec
++++ b/dnf-plugin-spacewalk.spec
+@@ -12,7 +12,7 @@
+ Summary: DNF plugin for Spacewalk
+ Name: dnf-plugin-spacewalk
+ Version: 2.8.5
+-Release: 7%{?dist}
++Release: 8%{?dist}
+ License: GPLv2
+ Source0: https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
+ URL:     https://github.com/spacewalkproject/spacewalk
+@@ -24,9 +24,11 @@ Requires: dnf-plugins-core
+ Requires: librepo >= 1.7.15
+ %if 0%{?fedora}
+ Obsoletes: yum-rhn-plugin < 2.7
++Requires: dnf >= 4.0.9
+ %endif
+ %if 0%{?rhel} >= 8
+ Provides: yum-rhn-plugin = %{version}
++Requires: dnf >= 4.0.9
+ %endif
+ 
+ %description
+@@ -111,6 +113,9 @@ install -m 644 actions/errata.py %{buildroot}%{python3_sitelib}/rhn/actions/
+ %endif
+ 
+ %changelog
++* Mon Dec 10 2018 Michael Mraka <michael.mraka@redhat.com> 2.8.5-8
++- Resolves: #1637980 - use new api for http headers (michael.mraka@redhat.com)
++
+ * Wed Oct 31 2018 Tomas Kasparek <tkasparek@redhat.com> 2.8.5-7
+ - Resolves: rhbz#1633298 - librepo dependency is not added automatically (michael.mraka@redhat.com)
+ 
+diff --git a/spacewalk.py b/spacewalk.py
+index e0b418b..61bc5d8 100644
+--- a/spacewalk.py
++++ b/spacewalk.py
+@@ -242,11 +242,11 @@ class  SpacewalkRepo(dnf.repo.Repo):
+         else:
+             self.disable()
+ 
+-        if hasattr(self, '_repo'):
+-            # dnf > 3.6.0
++        if hasattr(self, 'set_http_headers'):
++            # dnf > 4.0.9  on RHEL 8, Fedora 29/30
+             http_headers = self.create_http_headers()
+             if http_headers:
+-                self._repo.setHttpHeaders(http_headers)
++                self.set_http_headers(http_headers)
+ 
+     def create_http_headers(self):
+         http_headers = []

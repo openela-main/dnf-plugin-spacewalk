@@ -1,0 +1,37 @@
+diff --git a/dnf-plugin-spacewalk.spec b/dnf-plugin-spacewalk.spec
+index d2c31fa..ae9fecb 100644
+--- a/dnf-plugin-spacewalk.spec
++++ b/dnf-plugin-spacewalk.spec
+@@ -12,7 +12,7 @@
+ Summary: DNF plugin for Spacewalk
+ Name: dnf-plugin-spacewalk
+ Version: 2.8.5
+-Release: 10%{?dist}
++Release: 11%{?dist}
+ License: GPLv2
+ Source0: https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
+ URL:     https://github.com/spacewalkproject/spacewalk
+@@ -113,6 +113,9 @@ install -m 644 actions/errata.py %{buildroot}%{python3_sitelib}/rhn/actions/
+ %endif
+ 
+ %changelog
++* Wed Jun 19 2019 Michael Mraka <michael.mraka@redhat.com> 2.8.5-11
++- Resolves: #1701222 - ignore broken json cache
++
+ * Wed Apr 03 2019 Michael Mraka <michael.mraka@redhat.com> 2.8.5-10
+ - Resolves: #1673445 - changed wording to refer to Red Hat Satellite
+ 
+diff --git a/spacewalk.py b/spacewalk.py
+index 89e7822..1e5255f 100644
+--- a/spacewalk.py
++++ b/spacewalk.py
+@@ -186,6 +186,9 @@ class Spacewalk(dnf.Plugin):
+         except (FileNotFoundError, IOError) as e:
+             if e.errno != errno.ENOENT:
+                 raise
++        except json.decoder.JSONDecodeError as e:
++            pass        # ignore broken json and recreate it later
++
+         return {}
+ 
+     def _write_channels_file(self, var):

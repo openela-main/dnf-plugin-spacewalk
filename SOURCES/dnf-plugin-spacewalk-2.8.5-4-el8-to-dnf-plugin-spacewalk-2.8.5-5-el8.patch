@@ -1,0 +1,45 @@
+diff --git a/dnf-plugin-spacewalk.spec b/dnf-plugin-spacewalk.spec
+index e73ef9b..41ff4e5 100644
+--- a/dnf-plugin-spacewalk.spec
++++ b/dnf-plugin-spacewalk.spec
+@@ -12,7 +12,7 @@
+ Summary: DNF plugin for Spacewalk
+ Name: dnf-plugin-spacewalk
+ Version: 2.8.5
+-Release: 4%{?dist}
++Release: 5%{?dist}
+ License: GPLv2
+ Source0: https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
+ URL:     https://github.com/spacewalkproject/spacewalk
+@@ -29,6 +29,9 @@ Requires: librepo >= 1.7.15
+ %if 0%{?fedora}
+ Obsoletes: yum-rhn-plugin < 2.7
+ %endif
++%if 0%{?rhel} >= 8
++Provides: yum-rhn-plugin = %{version}
++%endif
+ 
+ %description
+ This DNF plugin provides access to a Spacewalk server for software updates.
+@@ -71,6 +74,8 @@ install -d %{buildroot}%{_mandir}/man{5,8}
+ install -m 644 spacewalk.conf %{buildroot}%{_sysconfdir}/dnf/plugins/
+ install -m 644 man/spacewalk.conf.5 %{buildroot}%{_mandir}/man5/
+ install -m 644 man/dnf.plugin.spacewalk.8 %{buildroot}%{_mandir}/man8/
++ln -sf dnf.plugin.spacewalk.8 $RPM_BUILD_ROOT%{_mandir}/man8/dnf-plugin-spacewalk.8
++ln -sf dnf.plugin.spacewalk.8 $RPM_BUILD_ROOT%{_mandir}/man8/yum-rhn-plugin.8
+ 
+ # python2
+ %if 0%{?build_py2}
+@@ -112,6 +117,12 @@ install -m 644 actions/errata.py %{buildroot}%{python3_sitelib}/rhn/actions/
+ %endif
+ 
+ %changelog
++* Tue Jul 24 2018 Tomas Kasparek <tkasparek@redhat.com> 2.8.5-5
++- Related: #1581665 - provide useful symlinks to a manpage
++  (tkasparek@redhat.com)
++- Resolves: #1581665 - provide yum-rhn-plugin on new RHEL systems
++  (tkasparek@redhat.com)
++
+ * Tue Mar 20 2018 Tomas Kasparek <tkasparek@redhat.com> 2.8.5-4
+ - don't build python2 subpackages on systems with default python2
+   (tkasparek@redhat.com)
