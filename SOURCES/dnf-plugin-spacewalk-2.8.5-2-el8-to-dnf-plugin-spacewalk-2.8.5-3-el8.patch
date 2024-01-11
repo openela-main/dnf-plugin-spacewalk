@@ -1,0 +1,47 @@
+diff --git a/dnf-plugin-spacewalk.spec b/dnf-plugin-spacewalk.spec
+index 8a4516e..d0533dc 100644
+--- a/dnf-plugin-spacewalk.spec
++++ b/dnf-plugin-spacewalk.spec
+@@ -1,4 +1,4 @@
+-%if 0%{?fedora}
++%if 0%{?fedora} || 0%{?rhel} >= 8
+ %global build_py3   1
+ %global default_py3 1
+ %endif
+@@ -8,14 +8,14 @@
+ Summary: DNF plugin for Spacewalk
+ Name: dnf-plugin-spacewalk
+ Version: 2.8.5
+-Release: 2%{?dist}
++Release: 3%{?dist}
+ License: GPLv2
+ Source0: https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
+ URL:     https://github.com/spacewalkproject/spacewalk
+ BuildArch: noarch
+ 
+ Requires: %{pythonX}-%{name} = %{version}-%{release}
+-%if 0%{?fedora} <= 25
++%if 0%{?fedora} && 0%{?fedora} <= 25
+ Requires: dnf >= 0.5.3
+ %else
+ Requires: dnf >= 2.0.0
+@@ -54,7 +54,7 @@ Python 3 specific files for %{name}.
+ %setup -q
+ 
+ %build
+-%if 0%{?fedora} <= 25
++%if 0%{?fedora} && 0%{?fedora} <= 25
+ patch -p4 < dnf-plugin-spacewalk-revert-to-1.0.patch
+ %endif
+ 
+@@ -102,6 +102,10 @@ install -m 644 actions/errata.py %{buildroot}%{python3_sitelib}/rhn/actions/
+ %endif
+ 
+ %changelog
++* Tue Feb 20 2018 Tomas Kasparek <tkasparek@redhat.com> 2.8.5-3
++- %%if 0%%{?fedora} <= 25 is always true on rhel (tkasparek@redhat.com)
++- rhel8 utilizes python3 (tkasparek@redhat.com)
++
+ * Mon Feb 19 2018 Tomas Kasparek <tkasparek@redhat.com> 2.8.5-2
+ - rebuild for rhel8
+ 
